@@ -1,0 +1,33 @@
+<%- |
+  Boolean $disable_mlock,
+  Boolean $ui_enabled,
+| -%>
+# Vault server configuration
+# Managed by Puppet - do not edit manually
+
+# Storage backend - file-based for single node
+storage "file" {
+  path = "/vault/data"
+}
+
+# TCP listener
+listener "tcp" {
+  address     = "0.0.0.0:8200"
+  tls_disable = 1
+}
+
+# API address for client redirection
+api_addr = "http://127.0.0.1:8200"
+
+# Cluster address (for future HA setup)
+cluster_addr = "https://127.0.0.1:8201"
+
+<% if $disable_mlock { -%>
+# Disable mlock - required for Docker without IPC_LOCK capability
+disable_mlock = true
+<% } -%>
+
+<% if $ui_enabled { -%>
+# Enable web UI
+ui = true
+<% } -%>

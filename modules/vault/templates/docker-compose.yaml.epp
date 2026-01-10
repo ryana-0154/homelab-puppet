@@ -1,0 +1,20 @@
+<%- |
+  String $vault_version,
+| -%>
+# Managed by Puppet - do not edit manually
+services:
+  vault:
+    image: hashicorp/vault:<%= $vault_version %>
+    container_name: vault
+    restart: always
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./config:/vault/config:ro
+      - ./data:/vault/data
+      - ./logs:/vault/logs
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    command: server
