@@ -1,0 +1,106 @@
+<%- |
+  String $prometheus_url,
+  String $prometheus_username,
+  String $loki_url,
+  String $loki_username,
+  String $tempo_url,
+  String $tempo_username,
+  String $api_key,
+| -%>
+// Grafana Alloy configuration
+// Managed by Puppet - do not edit manually
+
+// ============================================================================
+// METRICS - Prometheus remote write to Grafana Cloud
+// ============================================================================
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = "<%= $prometheus_url %>"
+
+    basic_auth {
+      username = "<%= $prometheus_username %>"
+      password = "<%= $api_key %>"
+    }
+  }
+}
+
+// Scrape local node metrics
+prometheus.exporter.unix "local" {
+}
+
+prometheus.scrape "local_node" {
+  targets    = prometheus.exporter.unix.local.targets
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ============================================================================
+// LOGS - Forward to Grafana Cloud Loki
+// ============================================================================
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = "<%= $loki_url %>"
+
+    basic_auth {
+      username = "<%= $loki_username %>"
+      password = "<%= $api_key %>"
+    }
+  }
+}
+
+// Discover and tail local log files
+local.file_match "system_logs" {
+  path_targets = [
+    {__path__ = "/var/log/*.log"},
+    {__path__ = "/var/log/syslog"},
+    {__path__ = "/var/log/messages"},
+  ]
+}
+
+loki.source.file "system_logs" {
+  targets    = local.file_match.system_logs.targets
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+// Docker container logs
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// ============================================================================
+// TRACES - OTLP to Grafana Cloud Tempo
+// ============================================================================
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = "<%= $tempo_url %>"
+
+    auth = otelcol.auth.basic.grafana_cloud.handler
+  }
+}
+
+otelcol.auth.basic "grafana_cloud" {
+  username = "<%= $tempo_username %>"
+  password = "<%= $api_key %>"
+}
