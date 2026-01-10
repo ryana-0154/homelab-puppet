@@ -4,10 +4,16 @@
   Integer $authentik_port_https,
 | -%>
 # Managed by Puppet - do not edit manually
+networks:
+  authentik:
+    driver: bridge
+    internal: false
+
 services:
   postgresql:
     image: docker.io/library/postgres:16-alpine
     container_name: authentik-postgresql
+    hostname: postgresql
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
@@ -21,10 +27,15 @@ services:
       POSTGRES_PASSWORD: ${PG_PASS}
       POSTGRES_USER: authentik
       POSTGRES_DB: authentik
+    networks:
+      authentik:
+        aliases:
+          - postgresql
 
   redis:
     image: docker.io/library/redis:7-alpine
     container_name: authentik-redis
+    hostname: redis
     restart: always
     command: --save 60 1 --loglevel warning
     healthcheck:
@@ -35,10 +46,15 @@ services:
       timeout: 3s
     volumes:
       - ./redis:/data
+    networks:
+      authentik:
+        aliases:
+          - redis
 
   server:
     image: ghcr.io/goauthentik/server:<%= $authentik_version %>
     container_name: authentik-server
+    hostname: server
     restart: always
     command: server
     dns_search: []
@@ -60,10 +76,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - authentik
 
   worker:
     image: ghcr.io/goauthentik/server:<%= $authentik_version %>
     container_name: authentik-worker
+    hostname: worker
     restart: always
     command: worker
     dns_search: []
@@ -85,3 +104,5 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - authentik
