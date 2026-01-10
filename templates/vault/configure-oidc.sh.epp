@@ -38,7 +38,8 @@ fi
 # Create admin policy if it doesn't exist
 if ! vault_cmd policy read admin >/dev/null 2>&1; then
   echo "Creating admin policy..."
-  docker exec -e VAULT_ADDR="<%= $vault_addr %>" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault policy write admin - <<'POLICY'
+  # Write policy to temp file, copy to container, then apply
+  cat > /tmp/admin-policy.hcl <<'POLICY'
 # Admin policy - full access
 path "secret/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
@@ -62,6 +63,9 @@ path "identity/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
 }
 POLICY
+  docker cp /tmp/admin-policy.hcl vault:/tmp/admin-policy.hcl
+  vault_cmd policy write admin /tmp/admin-policy.hcl
+  rm -f /tmp/admin-policy.hcl
 else
   echo "Admin policy already exists"
 fi
