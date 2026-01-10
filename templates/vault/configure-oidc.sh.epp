@@ -15,8 +15,9 @@ set -e
 VAULT_TOKEN=$(cat "<%= $vault_token_file %>")
 
 # Helper function to run vault commands in container
+# Use localhost inside container, vault_addr is for external redirect URIs
 vault_cmd() {
-  docker exec -e VAULT_ADDR="<%= $vault_addr %>" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault "$@"
+  docker exec -e VAULT_ADDR="http://127.0.0.1:8200" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault "$@"
 }
 
 # Try to unseal first if unseal script exists
