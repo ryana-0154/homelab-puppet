@@ -91,6 +91,7 @@ vault_cmd write auth/oidc/config \
   oidc_discovery_url="<%= $oidc_discovery_url %>" \
   oidc_client_id="<%= $authentik_client_id %>" \
   oidc_client_secret="<%= $authentik_client_secret %>" \
+  oidc_scopes="openid,profile,email" \
   default_role="default"
 
 # Create default role for all users
