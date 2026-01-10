@@ -8,12 +8,18 @@
 #   Disable mlock (required for Docker without IPC_LOCK)
 # @param ui_enabled
 #   Enable Vault web UI
+# @param auto_unseal
+#   Enable automatic unsealing on startup
+# @param unseal_keys
+#   Array of unseal keys (required if auto_unseal is true)
 #
 class homelab::vault (
-  String $vault_version   = 'latest',
-  String $vault_addr      = 'http://127.0.0.1:8200',
-  Boolean $disable_mlock  = true,
-  Boolean $ui_enabled     = true,
+  String $vault_version          = 'latest',
+  String $vault_addr             = 'http://127.0.0.1:8200',
+  Boolean $disable_mlock         = true,
+  Boolean $ui_enabled            = true,
+  Boolean $auto_unseal           = false,
+  Optional[Array[String]] $unseal_keys = undef,
 ) {
   require homelab::docker
 
@@ -98,5 +104,59 @@ class homelab::vault (
       File["${vault_dir}/config/vault.hcl"],
       File["${vault_dir}/docker-compose.yaml"],
     ],
+  }
+
+  # Auto-unseal configuration
+  if $auto_unseal and $unseal_keys {
+    # Store unseal keys securely
+    file { "${vault_dir}/.unseal_keys":
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
+      content => $unseal_keys.join("\n"),
+      require => File[$vault_dir],
+    }
+
+    # Auto-unseal script
+    file { "${vault_dir}/unseal.sh":
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0700',
+      content => epp('homelab/vault/unseal.sh.epp', {
+        'vault_dir'  => $vault_dir,
+        'vault_addr' => $vault_addr,
+      }),
+      require => File[$vault_dir],
+    }
+
+    # Systemd service for auto-unseal
+    file { '/etc/systemd/system/vault-unseal.service':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      content => epp('homelab/vault/vault-unseal.service.epp', {
+        'vault_dir' => $vault_dir,
+      }),
+      notify  => Exec['systemd-daemon-reload-vault'],
+    }
+
+    exec { 'systemd-daemon-reload-vault':
+      command     => '/usr/bin/systemctl daemon-reload',
+      refreshonly => true,
+    }
+
+    service { 'vault-unseal':
+      ensure  => running,
+      enable  => true,
+      require => [
+        File['/etc/systemd/system/vault-unseal.service'],
+        File["${vault_dir}/unseal.sh"],
+        File["${vault_dir}/.unseal_keys"],
+        Exec['systemd-daemon-reload-vault'],
+      ],
+    }
   }
 }

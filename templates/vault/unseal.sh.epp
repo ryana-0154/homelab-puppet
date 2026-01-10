@@ -1,0 +1,66 @@
+<%- |
+  String $vault_dir,
+  String $vault_addr,
+| -%>
+#!/bin/bash
+# Managed by Puppet - Auto-unseal Vault
+# This script waits for Vault to be ready and then unseals it
+
+VAULT_DIR="<%= $vault_dir %>"
+VAULT_ADDR="<%= $vault_addr %>"
+KEYS_FILE="${VAULT_DIR}/.unseal_keys"
+
+# Wait for Vault container to be running
+echo "Waiting for Vault container..."
+for i in {1..60}; do
+  if docker ps --format '{{.Names}}' | grep -q '^vault$'; then
+    echo "Vault container is running"
+    break
+  fi
+  sleep 2
+done
+
+# Wait for Vault to be initialized and ready
+echo "Waiting for Vault to be ready..."
+for i in {1..30}; do
+  if docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault status >/dev/null 2>&1; then
+    echo "Vault is responding"
+    break
+  fi
+  sleep 2
+done
+
+# Check if already unsealed
+if docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault status 2>/dev/null | grep -q "Sealed.*false"; then
+  echo "Vault is already unsealed"
+  exit 0
+fi
+
+# Check if Vault is initialized
+if ! docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault status 2>/dev/null | grep -q "Initialized.*true"; then
+  echo "Vault is not initialized yet. Skipping unseal."
+  exit 0
+fi
+
+# Read unseal keys and unseal
+echo "Unsealing Vault..."
+while IFS= read -r key; do
+  if [ -n "$key" ]; then
+    docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault operator unseal "$key" >/dev/null 2>&1
+
+    # Check if unsealed
+    if docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault status 2>/dev/null | grep -q "Sealed.*false"; then
+      echo "Vault successfully unsealed"
+      exit 0
+    fi
+  fi
+done < "${KEYS_FILE}"
+
+# Final check
+if docker exec -e VAULT_ADDR="${VAULT_ADDR}" vault vault status 2>/dev/null | grep -q "Sealed.*false"; then
+  echo "Vault successfully unsealed"
+  exit 0
+else
+  echo "Failed to unseal Vault"
+  exit 1
+fi

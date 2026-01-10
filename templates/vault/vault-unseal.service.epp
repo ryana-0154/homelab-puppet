@@ -1,0 +1,18 @@
+<%- |
+  String $vault_dir,
+| -%>
+# Managed by Puppet - Vault auto-unseal service
+[Unit]
+Description=Vault Auto-Unseal
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=<%= $vault_dir %>/unseal.sh
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
