@@ -41,6 +41,7 @@ services:
     container_name: authentik-server
     restart: always
     command: server
+    dns_search: []
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_REDIS__HOST: redis
@@ -65,6 +66,7 @@ services:
     container_name: authentik-worker
     restart: always
     command: worker
+    dns_search: []
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_REDIS__HOST: redis
