@@ -118,7 +118,7 @@ class homelab::vault (
       owner   => 'root',
       group   => 'root',
       mode    => '0600',
-      content => $unseal_keys.join("\n"),
+      content => "${unseal_keys.join("\n")}\n",
       require => File[$vault_dir],
     }
 
