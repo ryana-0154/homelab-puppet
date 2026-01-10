@@ -1,0 +1,38 @@
+<%- | | -%>
+# Managed by Puppet - Admin policy for Vault
+# Full access to all paths
+
+# Allow full access to all secrets
+path "secret/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+# Allow managing auth methods
+path "auth/*" {
+  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+# Allow managing policies
+path "sys/policies/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+# Allow managing mounts
+path "sys/mounts/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+# Allow reading system health
+path "sys/health" {
+  capabilities = ["read"]
+}
+
+# Allow reading system info
+path "sys/*" {
+  capabilities = ["read", "list"]
+}
+
+# Allow managing identities
+path "identity/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
