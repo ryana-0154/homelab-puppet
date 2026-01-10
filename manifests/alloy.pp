@@ -17,7 +17,7 @@
 # @param alloy_version
 #   Docker image tag for Alloy
 #
-class alloy (
+class homelab::alloy (
   String $grafana_cloud_api_key,
   String $grafana_cloud_prometheus_url,
   String $grafana_cloud_prometheus_username,
@@ -27,7 +27,7 @@ class alloy (
   String $grafana_cloud_tempo_username,
   String $alloy_version = 'latest',
 ) {
-  require docker
+  require homelab::docker
 
   $alloy_dir = '/opt/alloy'
 
@@ -45,7 +45,7 @@ class alloy (
     owner   => 'root',
     group   => 'root',
     mode    => '0640',
-    content => epp('alloy/config.alloy.epp', {
+    content => epp('homelab/alloy/config.alloy.epp', {
       'prometheus_url'      => $grafana_cloud_prometheus_url,
       'prometheus_username' => $grafana_cloud_prometheus_username,
       'loki_url'            => $grafana_cloud_loki_url,
@@ -63,7 +63,7 @@ class alloy (
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
-    content => epp('alloy/docker-compose.yaml.epp', {
+    content => epp('homelab/alloy/docker-compose.yaml.epp', {
       'alloy_version' => $alloy_version,
     }),
     notify  => Exec['alloy-docker-compose-up'],

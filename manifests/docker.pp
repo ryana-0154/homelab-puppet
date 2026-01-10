@@ -3,7 +3,7 @@
 # @param docker_compose_version
 #   Version of Docker Compose plugin to install
 #
-class docker (
+class homelab::docker (
   String $docker_compose_version = '2.24.0',
 ) {
   # Install prerequisites

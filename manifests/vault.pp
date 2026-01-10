@@ -9,13 +9,13 @@
 # @param ui_enabled
 #   Enable Vault web UI
 #
-class vault (
+class homelab::vault (
   String $vault_version   = 'latest',
   String $vault_addr      = 'http://127.0.0.1:8200',
   Boolean $disable_mlock  = true,
   Boolean $ui_enabled     = true,
 ) {
-  require docker
+  require homelab::docker
 
   $vault_dir = '/opt/vault'
 
@@ -57,7 +57,7 @@ class vault (
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
-    content => epp('vault/vault.hcl.epp', {
+    content => epp('homelab/vault/vault.hcl.epp', {
       'disable_mlock' => $disable_mlock,
       'ui_enabled'    => $ui_enabled,
     }),
@@ -71,7 +71,7 @@ class vault (
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
-    content => epp('vault/docker-compose.yaml.epp', {
+    content => epp('homelab/vault/docker-compose.yaml.epp', {
       'vault_version' => $vault_version,
     }),
     require => File[$vault_dir],
