@@ -98,14 +98,19 @@ vault_cmd write auth/oidc/role/default \
 <% if $admin_groups.length > 0 { -%>
 # Create admin role for specified groups
 echo "Creating admin OIDC role..."
-vault_cmd write auth/oidc/role/admin \
-  bound_audiences="<%= $authentik_client_id %>" \
-  allowed_redirect_uris="<%= $vault_addr %>/ui/vault/auth/oidc/oidc/callback" \
-  allowed_redirect_uris="http://localhost:8250/oidc/callback" \
-  user_claim="preferred_username" \
-  groups_claim="groups" \
-  bound_claims='{"groups": [<%= $admin_groups.map |$g| { "\"${g}\"" }.join(', ') %>]}' \
-  policies="admin,default"
+cat > /tmp/admin-role.json <<'ROLE'
+{
+  "bound_audiences": "<%= $authentik_client_id %>",
+  "allowed_redirect_uris": ["<%= $vault_addr %>/ui/vault/auth/oidc/oidc/callback", "http://localhost:8250/oidc/callback"],
+  "user_claim": "preferred_username",
+  "groups_claim": "groups",
+  "bound_claims": {"groups": [<%= $admin_groups.map |$g| { "\"${g}\"" }.join(', ') %>]},
+  "policies": ["admin", "default"]
+}
+ROLE
+docker cp /tmp/admin-role.json vault:/tmp/admin-role.json
+vault_cmd write auth/oidc/role/admin @/tmp/admin-role.json
+rm -f /tmp/admin-role.json
 
 <% } -%>
 # Mark as configured
