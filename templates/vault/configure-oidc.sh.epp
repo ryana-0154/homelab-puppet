@@ -19,6 +19,12 @@ vault_cmd() {
   docker exec -e VAULT_ADDR="<%= $vault_addr %>" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault "$@"
 }
 
+# Try to unseal first if unseal script exists
+if [ -x /opt/vault/unseal.sh ]; then
+  echo "Running unseal script..."
+  /opt/vault/unseal.sh || true
+fi
+
 # Wait for Vault to be ready and unsealed
 for i in {1..30}; do
   if vault_cmd status 2>/dev/null | grep -q "Sealed.*false"; then
