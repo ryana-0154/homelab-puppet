@@ -1,0 +1,26 @@
+<%- |
+  String $config_file,
+  String $agent_user,
+  String $agent_group,
+| -%>
+# Managed by Puppet - Vault Agent systemd service
+[Unit]
+Description=HashiCorp Vault Agent
+Documentation=https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<%= $agent_user %>
+Group=<%= $agent_group %>
+ExecStart=/usr/local/bin/vault agent -config=<%= $config_file %>
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

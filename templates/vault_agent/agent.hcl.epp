@@ -1,0 +1,55 @@
+<%- |
+  String $vault_addr,
+  String $role_id_file,
+  String $secret_id_file,
+  Hash $secrets,
+  String $agent_dir,
+| -%>
+# Managed by Puppet - Vault Agent configuration
+# https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent
+
+pid_file = "<%= $agent_dir %>/vault-agent.pid"
+
+vault {
+  address = "<%= $vault_addr %>"
+}
+
+auto_auth {
+  method "approle" {
+    config = {
+      role_id_file_path   = "<%= $role_id_file %>"
+      secret_id_file_path = "<%= $secret_id_file %>"
+      remove_secret_id_file_after_reading = false
+    }
+  }
+
+  sink "file" {
+    config = {
+      path = "<%= $agent_dir %>/token"
+      mode = 0600
+    }
+  }
+}
+
+cache {
+  use_auto_auth_token = true
+}
+
+<% $secrets.each |$dest_path, $config| { -%>
+<%
+  $vault_path = $config['vault_path']
+  $field = $config['field']
+  $owner = $config['owner'] ? { undef => 'root', default => $config['owner'] }
+  $group = $config['group'] ? { undef => 'root', default => $config['group'] }
+  $mode = $config['mode'] ? { undef => '0600', default => $config['mode'] }
+  # Convert mode string to octal for Vault Agent (remove leading 0 if present)
+  $mode_octal = regsubst($mode, '^0', '')
+-%>
+template {
+  contents = "{{ with secret \"<%= $vault_path %>\" }}{{ .Data.data.<%= $field %> }}{{ end }}"
+  destination = "<%= $dest_path %>"
+  perms = 0<%= $mode_octal %>
+  error_on_missing_key = true
+}
+
+<% } -%>
