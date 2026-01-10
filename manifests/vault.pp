@@ -20,6 +20,7 @@ class homelab::vault (
   Boolean $ui_enabled            = true,
   Boolean $auto_unseal           = false,
   Optional[Array[String]] $unseal_keys = undef,
+  Hash[String, String] $extra_hosts    = {},
 ) {
   require homelab::docker
 
@@ -79,6 +80,7 @@ class homelab::vault (
     mode    => '0644',
     content => epp('homelab/vault/docker-compose.yaml.epp', {
       'vault_version' => $vault_version,
+      'extra_hosts'   => $extra_hosts,
     }),
     require => File[$vault_dir],
     notify  => Exec['vault-docker-compose-up'],

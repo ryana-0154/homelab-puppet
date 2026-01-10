@@ -1,5 +1,6 @@
 <%- |
   String $vault_version,
+  Hash[String, String] $extra_hosts = {},
 | -%>
 # Managed by Puppet - do not edit manually
 services:
@@ -18,3 +19,9 @@ services:
     cap_add:
       - IPC_LOCK
     command: server
+<% if $extra_hosts.length > 0 { -%>
+    extra_hosts:
+<% $extra_hosts.each |$host, $ip| { -%>
+      - "<%= $host %>:<%= $ip %>"
+<% } -%>
+<% } -%>
