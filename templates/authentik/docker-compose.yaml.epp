@@ -2,6 +2,7 @@
   String $authentik_version,
   Integer $authentik_port,
   Integer $authentik_port_https,
+  Optional[String] $external_host = undef,
 | -%>
 # Managed by Puppet - do not edit manually
 networks:
@@ -66,6 +67,9 @@ services:
       AUTHENTIK_POSTGRESQL__USER: authentik
       AUTHENTIK_POSTGRESQL__NAME: authentik
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+<% if $external_host { -%>
+      AUTHENTIK_HOST: <%= $external_host %>
+<% } -%>
     volumes:
       - ./media:/media
       - ./templates:/templates

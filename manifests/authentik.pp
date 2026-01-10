@@ -17,6 +17,7 @@ class homelab::authentik (
   Optional[String] $postgres_password    = undef,
   Integer $authentik_port               = 9000,
   Integer $authentik_port_https         = 9443,
+  Optional[String] $external_host       = undef,
 ) {
   require homelab::docker
 
@@ -92,6 +93,7 @@ class homelab::authentik (
       'authentik_version'    => $authentik_version,
       'authentik_port'       => $authentik_port,
       'authentik_port_https' => $authentik_port_https,
+      'external_host'        => $external_host,
     }),
     require => File[$authentik_dir],
     notify  => Exec['authentik-docker-compose-up'],
