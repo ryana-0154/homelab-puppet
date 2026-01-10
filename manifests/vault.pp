@@ -108,6 +108,10 @@ class homelab::vault (
 
   # Auto-unseal configuration
   if $auto_unseal and $unseal_keys {
+    # Validate we have at least 3 keys (default threshold)
+    if $unseal_keys.length < 3 {
+      fail('auto_unseal requires at least 3 unseal_keys (default Vault threshold)')
+    }
     # Store unseal keys securely
     file { "${vault_dir}/.unseal_keys":
       ensure  => file,
