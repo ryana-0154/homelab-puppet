@@ -57,7 +57,8 @@ services:
     hostname: server
     restart: always
     command: server
-    dns_search: []
+    dns_search:
+      - .
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_REDIS__HOST: redis
@@ -85,7 +86,8 @@ services:
     hostname: worker
     restart: always
     command: worker
-    dns_search: []
+    dns_search:
+      - .
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_REDIS__HOST: redis
