@@ -12,12 +12,16 @@
 # Managed by Puppet - Configures Vault OIDC with Authentik
 set -e
 
-export VAULT_ADDR="<%= $vault_addr %>"
-export VAULT_TOKEN=$(cat "<%= $vault_token_file %>")
+VAULT_TOKEN=$(cat "<%= $vault_token_file %>")
+
+# Helper function to run vault commands in container
+vault_cmd() {
+  docker exec -e VAULT_ADDR="<%= $vault_addr %>" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault "$@"
+}
 
 # Wait for Vault to be ready and unsealed
 for i in {1..30}; do
-  if vault status 2>/dev/null | grep -q "Sealed.*false"; then
+  if vault_cmd status 2>/dev/null | grep -q "Sealed.*false"; then
     echo "Vault is unsealed and ready"
     break
   fi
@@ -26,15 +30,15 @@ for i in {1..30}; do
 done
 
 # Check if Vault is unsealed
-if ! vault status 2>/dev/null | grep -q "Sealed.*false"; then
+if ! vault_cmd status 2>/dev/null | grep -q "Sealed.*false"; then
   echo "ERROR: Vault is still sealed. Please unseal Vault first."
   exit 1
 fi
 
 # Create admin policy if it doesn't exist
-if ! vault policy read admin >/dev/null 2>&1; then
+if ! vault_cmd policy read admin >/dev/null 2>&1; then
   echo "Creating admin policy..."
-  vault policy write admin - <<'POLICY'
+  docker exec -e VAULT_ADDR="<%= $vault_addr %>" -e VAULT_TOKEN="${VAULT_TOKEN}" vault vault policy write admin - <<'POLICY'
 # Admin policy - full access
 path "secret/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
@@ -63,16 +67,16 @@ else
 fi
 
 # Enable OIDC auth method if not already enabled
-if ! vault auth list 2>/dev/null | grep -q "^oidc/"; then
+if ! vault_cmd auth list 2>/dev/null | grep -q "^oidc/"; then
   echo "Enabling OIDC auth method..."
-  vault auth enable oidc
+  vault_cmd auth enable oidc
 else
   echo "OIDC auth method already enabled"
 fi
 
 # Configure OIDC
 echo "Configuring OIDC provider..."
-vault write auth/oidc/config \
+vault_cmd write auth/oidc/config \
   oidc_discovery_url="<%= $oidc_discovery_url %>" \
   oidc_client_id="<%= $authentik_client_id %>" \
   oidc_client_secret="<%= $authentik_client_secret %>" \
@@ -80,9 +84,9 @@ vault write auth/oidc/config \
 
 # Create default role for all users
 echo "Creating default OIDC role..."
-vault write auth/oidc/role/default \
+vault_cmd write auth/oidc/role/default \
   bound_audiences="<%= $authentik_client_id %>" \
-  allowed_redirect_uris="${VAULT_ADDR}/ui/vault/auth/oidc/oidc/callback" \
+  allowed_redirect_uris="<%= $vault_addr %>/ui/vault/auth/oidc/oidc/callback" \
   allowed_redirect_uris="http://localhost:8250/oidc/callback" \
   user_claim="preferred_username" \
   policies="<%= $default_policy %>"
@@ -90,9 +94,9 @@ vault write auth/oidc/role/default \
 <% if $admin_groups.length > 0 { -%>
 # Create admin role for specified groups
 echo "Creating admin OIDC role..."
-vault write auth/oidc/role/admin \
+vault_cmd write auth/oidc/role/admin \
   bound_audiences="<%= $authentik_client_id %>" \
-  allowed_redirect_uris="${VAULT_ADDR}/ui/vault/auth/oidc/oidc/callback" \
+  allowed_redirect_uris="<%= $vault_addr %>/ui/vault/auth/oidc/oidc/callback" \
   allowed_redirect_uris="http://localhost:8250/oidc/callback" \
   user_claim="preferred_username" \
   groups_claim="groups" \
