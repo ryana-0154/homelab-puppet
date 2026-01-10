@@ -100,7 +100,7 @@ vault_cmd write auth/oidc/role/default \
   bound_audiences="<%= $authentik_client_id %>" \
   allowed_redirect_uris="<%= $vault_addr %>/ui/vault/auth/oidc/oidc/callback" \
   allowed_redirect_uris="http://localhost:8250/oidc/callback" \
-  user_claim="preferred_username" \
+  user_claim="sub" \
   policies="<%= $default_policy %>"
 
 <% if $admin_groups.length > 0 { -%>
