@@ -19,7 +19,7 @@
 #
 class homelab::vault::oidc_authentik (
   String $authentik_client_id,
-  Sensitive[String] $authentik_client_secret,
+  String $authentik_client_secret,
   String $authentik_url           = 'http://localhost:9000',
   String $authentik_app_slug      = 'vault',
   String $vault_addr              = 'http://127.0.0.1:8200',
@@ -44,7 +44,7 @@ class homelab::vault::oidc_authentik (
       'vault_token_file'        => $vault_token_file,
       'oidc_discovery_url'      => $oidc_discovery_url,
       'authentik_client_id'     => $authentik_client_id,
-      'authentik_client_secret' => $authentik_client_secret.unwrap,
+      'authentik_client_secret' => $authentik_client_secret,
       'default_policy'          => $default_policy,
       'admin_groups'            => $admin_groups,
       'oidc_config_marker'      => $oidc_config_marker,
