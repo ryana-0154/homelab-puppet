@@ -20,6 +20,12 @@ class homelab::authentik (
 ) {
   require homelab::docker
 
+  # Redis requires vm.overcommit_memory=1 for background saves
+  sysctl { 'vm.overcommit_memory':
+    ensure => present,
+    value  => '1',
+  }
+
   $authentik_dir = '/opt/authentik'
 
   # Create Authentik directory structure
