@@ -37,10 +37,19 @@ class homelab::authentik (
     mode   => '0755',
   }
 
-  file { ["${authentik_dir}/database", "${authentik_dir}/redis", "${authentik_dir}/media", "${authentik_dir}/templates", "${authentik_dir}/certs"]:
+  file { ["${authentik_dir}/database", "${authentik_dir}/media", "${authentik_dir}/templates", "${authentik_dir}/certs"]:
     ensure  => directory,
     owner   => 'root',
     group   => 'root',
+    mode    => '0755',
+    require => File[$authentik_dir],
+  }
+
+  # Redis container runs as UID 999
+  file { "${authentik_dir}/redis":
+    ensure  => directory,
+    owner   => '999',
+    group   => '999',
     mode    => '0755',
     require => File[$authentik_dir],
   }
