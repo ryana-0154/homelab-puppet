@@ -1,0 +1,19 @@
+<%- | Integer $oom_score_adjust, Integer $cpu_weight, Integer $io_weight, String $memory_low, Integer $nice_level | -%>
+# Managed by Puppet - ssh_priority module
+# Ensures SSH sessions have priority access to system resources
+
+[Service]
+# Protect from OOM killer (-1000 = never kill)
+OOMScoreAdjust=<%= $oom_score_adjust %>
+
+# Higher CPU priority (default: 100, max: 10000)
+CPUWeight=<%= $cpu_weight %>
+
+# Higher I/O priority (default: 100, max: 10000)
+IOWeight=<%= $io_weight %>
+
+# Reserve memory - protect from aggressive reclaim
+MemoryLow=<%= $memory_low %>
+
+# Process scheduling priority (lower = higher priority)
+Nice=<%= $nice_level %>
