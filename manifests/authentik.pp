@@ -10,14 +10,25 @@
 #   HTTP port for Authentik
 # @param authentik_port_https
 #   HTTPS port for Authentik
+# @param external_host
+#   External hostname for Authentik (used in redirects)
+# @param bootstrap_password
+#   Initial admin password (required for automated setup)
+# @param bootstrap_email
+#   Initial admin email (required for automated setup)
+# @param bootstrap_token
+#   Initial admin API token (optional, useful for API automation)
 #
 class homelab::authentik (
-  String $authentik_version            = 'latest',
+  String $authentik_version             = 'latest',
   Optional[String] $authentik_secret_key = undef,
   Optional[String] $postgres_password    = undef,
-  Integer $authentik_port               = 9000,
-  Integer $authentik_port_https         = 9443,
-  Optional[String] $external_host       = undef,
+  Integer $authentik_port                = 9000,
+  Integer $authentik_port_https          = 9443,
+  Optional[String] $external_host        = undef,
+  Optional[String] $bootstrap_password   = undef,
+  Optional[String] $bootstrap_email      = undef,
+  Optional[String] $bootstrap_token      = undef,
 ) {
   require homelab::docker
 
@@ -37,7 +48,7 @@ class homelab::authentik (
     mode   => '0755',
   }
 
-  file { ["${authentik_dir}/database", "${authentik_dir}/media", "${authentik_dir}/templates", "${authentik_dir}/certs"]:
+  file { ["${authentik_dir}/database", "${authentik_dir}/media", "${authentik_dir}/templates", "${authentik_dir}/certs", "${authentik_dir}/blueprints"]:
     ensure  => directory,
     owner   => 'root',
     group   => 'root',
@@ -103,6 +114,9 @@ class homelab::authentik (
       'authentik_port'       => $authentik_port,
       'authentik_port_https' => $authentik_port_https,
       'external_host'        => $external_host,
+      'bootstrap_password'   => $bootstrap_password,
+      'bootstrap_email'      => $bootstrap_email,
+      'bootstrap_token'      => $bootstrap_token,
     }),
     require => File[$authentik_dir],
     notify  => Exec['authentik-docker-compose-up'],

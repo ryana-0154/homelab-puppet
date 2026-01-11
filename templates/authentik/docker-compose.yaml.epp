@@ -3,6 +3,9 @@
   Integer $authentik_port,
   Integer $authentik_port_https,
   Optional[String] $external_host = undef,
+  Optional[String] $bootstrap_password = undef,
+  Optional[String] $bootstrap_email = undef,
+  Optional[String] $bootstrap_token = undef,
 | -%>
 # Managed by Puppet - do not edit manually
 networks:
@@ -70,9 +73,19 @@ services:
 <% if $external_host { -%>
       AUTHENTIK_HOST: <%= $external_host %>
 <% } -%>
+<% if $bootstrap_password { -%>
+      AUTHENTIK_BOOTSTRAP_PASSWORD: <%= $bootstrap_password %>
+<% } -%>
+<% if $bootstrap_email { -%>
+      AUTHENTIK_BOOTSTRAP_EMAIL: <%= $bootstrap_email %>
+<% } -%>
+<% if $bootstrap_token { -%>
+      AUTHENTIK_BOOTSTRAP_TOKEN: <%= $bootstrap_token %>
+<% } -%>
     volumes:
       - ./media:/media
       - ./templates:/templates
+      - ./blueprints:/blueprints/custom
     ports:
       - "<%= $authentik_port %>:9000"
       - "<%= $authentik_port_https %>:9443"
@@ -105,6 +118,7 @@ services:
       - ./media:/media
       - ./certs:/certs
       - ./templates:/templates
+      - ./blueprints:/blueprints/custom
     depends_on:
       postgresql:
         condition: service_healthy

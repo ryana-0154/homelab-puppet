@@ -1,0 +1,51 @@
+<%- |
+  String $application_name,
+  String $slug,
+  String $client_id,
+  Optional[String] $client_secret = undef,
+  String $client_type,
+  Array[String] $redirect_uris,
+  Optional[String] $launch_url = undef,
+| -%>
+# Managed by Puppet - do not edit manually
+# Blueprint for <%= $application_name %> OIDC application
+version: 1
+metadata:
+  name: <%= $application_name %>
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_providers_oauth2.oauth2provider
+    id: provider-<%= $slug %>
+    state: present
+    identifiers:
+      name: <%= $application_name %> Provider
+    attrs:
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      client_type: <%= $client_type %>
+      client_id: <%= $client_id %>
+<% if $client_secret { -%>
+      client_secret: <%= $client_secret %>
+<% } -%>
+<% if $redirect_uris.length > 0 { -%>
+      redirect_uris: |-
+<% $redirect_uris.each |$uri| { -%>
+        <%= $uri %>
+<% } -%>
+<% } -%>
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+  - model: authentik_core.application
+    id: app-<%= $slug %>
+    state: present
+    identifiers:
+      slug: <%= $slug %>
+    attrs:
+      name: <%= $application_name %>
+      provider: !KeyOf provider-<%= $slug %>
+      policy_engine_mode: any
+<% if $launch_url { -%>
+      meta_launch_url: <%= $launch_url %>
+<% } -%>
