@@ -31,6 +31,19 @@ class homelab::docker {
       }
     }
     'Debian': {
+      # Detect distro (ubuntu vs debian) and architecture
+      $distro = $facts['os']['name'] ? {
+        'Ubuntu' => 'ubuntu',
+        default  => 'debian',
+      }
+
+      $arch = $facts['os']['architecture'] ? {
+        'aarch64' => 'arm64',
+        'armv7l'  => 'armhf',
+        'x86_64'  => 'amd64',
+        default   => 'amd64',
+      }
+
       # Install prerequisites
       package { ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg']:
         ensure => present,
@@ -44,7 +57,7 @@ class homelab::docker {
 
       # Add Docker's official GPG key
       exec { 'docker-gpg-key':
-        command => '/usr/bin/curl -fsSL https://download.docker.com/linux/ubuntu/gpg | /usr/bin/gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg',
+        command => "/usr/bin/curl -fsSL https://download.docker.com/linux/${distro}/gpg | /usr/bin/gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
         creates => '/usr/share/keyrings/docker-archive-keyring.gpg',
         require => [Package['curl', 'gnupg'], File['/usr/share/keyrings']],
       }
@@ -52,7 +65,7 @@ class homelab::docker {
       # Add Docker repository
       file { '/etc/apt/sources.list.d/docker.list':
         ensure  => file,
-        content => "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu ${facts['os']['distro']['codename']} stable\n",
+        content => "deb [arch=${arch} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/${distro} ${facts['os']['distro']['codename']} stable\n",
         require => Exec['docker-gpg-key'],
         notify  => Exec['apt-update-docker'],
       }
